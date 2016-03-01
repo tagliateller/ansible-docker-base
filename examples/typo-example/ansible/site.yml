@@ -1,0 +1,43 @@
+- hosts: localhost
+  
+  vars:
+    apache_group: 
+      Debian: "root" 
+      RedHat: "apache"
+    apache_ctl: 
+      Debian: "/usr/sbin/apache2ctl"
+      RedHat: "/usr/sbin/apachectl"
+
+  tasks:
+    - yum: pkg=httpd state=present
+      when: ansible_os_family == "RedHat"
+
+    - name: Install packages
+      apt: update_cache=yes name={{ item }} state=present
+      with_items:
+        - apache2
+        - php5
+        - php5-mysql
+        - php5-gd
+        - libapache2-mod-php5
+        - mysql-server
+
+    - name: Make an apachectl symlink that is the same between distros
+      file: 
+         state: link 
+         src: "{{apache_ctl[ansible_os_family]}}"
+         dest: /usr/local/bin/apachectl
+
+    - name: Apply index.html from template
+      template: 
+         src: index.j2 
+         dest: /var/www/html/index.html
+         group: "{{ apache_group[ansible_os_family] }}"
+         mode: "0644"
+
+    - name: Apply index.php from template
+      template: 
+         src: index.php.j2
+         dest: /var/www/html/index.php
+         group: "{{ apache_group[ansible_os_family] }}"
+         mode: "0644"
