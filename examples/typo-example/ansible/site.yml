@@ -41,3 +41,15 @@
          dest: /var/www/html/index.php
          group: "{{ apache_group[ansible_os_family] }}"
          mode: "0644"
+
+    - name: download foo.conf
+      get_url: 
+         url: http://get.typo3.org/7.6 
+         dest: /var/www/ 
+         mode: "0440"
+
+#vagrant@vagrant-ubuntu-trusty-64:/var/www$ cd html/ vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ ln -s ../typo3_src-7.6.4 typo3_src vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ ln -s typo3_src/typo3 typo3 vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ ln -s typo3_src/index.php index.php
+
+#vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ touch FIRST_INSTALL
+
+vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ cp typo3_src/_.htaccess .htaccess
