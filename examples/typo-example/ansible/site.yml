@@ -1,6 +1,7 @@
 ---
-- hosts: default
-  
+#- hosts: default
+- hosts: local
+   
   vars:
     apache_group: 
       Debian: "root" 
