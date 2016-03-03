@@ -1,4 +1,5 @@
-- hosts: localhost
+---
+- hosts: default
   
   vars:
     apache_group: 
@@ -7,6 +8,11 @@
     apache_ctl: 
       Debian: "/usr/sbin/apache2ctl"
       RedHat: "/usr/sbin/apachectl"
+
+  handlers:
+
+    - name: restart apache
+      service: name=apache2 state=restarted
 
   tasks:
     - yum: pkg=httpd state=present
@@ -21,6 +27,7 @@
         - php5-gd
         - libapache2-mod-php5
         - mysql-server
+      when: ansible_os_family == "Debian" 
 
     - name: Make an apachectl symlink that is the same between distros
       file: 
@@ -28,28 +35,74 @@
          src: "{{apache_ctl[ansible_os_family]}}"
          dest: /usr/local/bin/apachectl
 
-    - name: Apply index.html from template
-      template: 
-         src: index.j2 
-         dest: /var/www/html/index.html
-         group: "{{ apache_group[ansible_os_family] }}"
-         mode: "0644"
+#    - name: Apply index.html from template
+#      template: 
+#         src: index.j2 
+#         dest: /var/www/html/index.html
+#         group: "{{ apache_group[ansible_os_family] }}"
+#         mode: "0644"
 
-    - name: Apply index.php from template
-      template: 
-         src: index.php.j2
-         dest: /var/www/html/index.php
-         group: "{{ apache_group[ansible_os_family] }}"
-         mode: "0644"
+#    - name: Apply index.php from template
+#      template: 
+#         src: index.php.j2
+#         dest: /var/www/html/index.php
+#         group: "{{ apache_group[ansible_os_family] }}"
+#         mode: "0644"
 
-    - name: download foo.conf
+    - name: download typo3 sources
       get_url: 
          url: http://get.typo3.org/7.6 
          dest: /var/www/ 
          mode: "0440"
+      register: typo3_src_filename
 
-#vagrant@vagrant-ubuntu-trusty-64:/var/www$ cd html/ vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ ln -s ../typo3_src-7.6.4 typo3_src vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ ln -s typo3_src/typo3 typo3 vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ ln -s typo3_src/index.php index.php
+    - name: print download name
+      debug: msg="filename is {{ typo3_src_filename }}"
 
-#vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ touch FIRST_INSTALL
+    - name: find real filename
+      command: find -name typo3_src*.tar.gz
+      args:
+         chdir: /var/www/
+      register: typo3_find_result
 
-vagrant@vagrant-ubuntu-trusty-64:/var/www/html$ cp typo3_src/_.htaccess .htaccess
+    - name: print find name
+      debug: msg="result is {{ typo3_find_result.stdout }}"
+
+    # Unarchive a file that is already on the remote machine
+    - name: unpack typo3 sources
+      unarchive: 
+         src: "/var/www/{{ typo3_find_result.stdout }}"
+         dest: /var/www/ 
+         copy: no
+
+    - name: link typo3 src
+      command: ln -s ../typo3_src-7.6.4 typo3_src
+      args:
+        chdir: /var/www/html/
+
+    - name: typo3 dir link
+      command: ln -s typo3_src/typo3 typo3
+      args:
+        chdir: /var/www/html/
+
+    - name: typo3 indexphp link
+      command: ln -s typo3_src/index.php index.php
+      args:
+        chdir: /var/www/html/
+
+    - name: touch first install
+      command: touch FIRST_INSTALL
+      args:
+       chdir: /var/www/html/
+
+    - name: change owner /var/www
+      command: chown -R root:www-data /var/www
+
+    - name: change mode /var/www
+      command: chmod -R 775 /var/www/
+
+    - name: kopiere htaccess
+      command: cp typo3_src/_.htaccess .htaccess
+      args:
+        chdir: /var/www/html/
+      notify: [restart apache]

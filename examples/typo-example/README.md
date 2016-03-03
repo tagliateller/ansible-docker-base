@@ -1,0 +1,2 @@
+export ANSIBLE_HOST_KEY_CHECKING=False
+ansible-playbook --private-key=.vagrant/machines/default/virtualbox/private_key -u vagrant -s -i .vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory ansible/site.yml
