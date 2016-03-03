@@ -4,6 +4,8 @@
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
 
+Vagrant.require_version ">= 1.7.0"
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # All Vagrant configuration is done here. The most common configuration
   # options are documented and commented below. For a complete reference,
@@ -16,11 +18,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Don't use this in your CI environment when multiple builds run in parallel
   config.vm.network "forwarded_port", guest: 80, host: 8080
 
-#  # Provision your virtual machine with ansible.
-#  config.vm.provision "ansible" do |ansible|
-#    # ansible.playbook = "provision.yaml"
-#    ansible.playbook = "ansible/site.yml"
-#    ansible.sudo = true
-#    ansible.raw_ssh_args = ['-o IdentitiesOnly=yes']
-#  end
+  # Disable the new default behavior introduced in Vagrant 1.7, to
+  # ensure that all Vagrant machines will use the same SSH key pair.
+  # See https://github.com/mitchellh/vagrant/issues/5005
+  config.ssh.insert_key = false
+
+  # Provision your virtual machine with ansible.
+  config.vm.provision "ansible" do |ansible|
+    # ansible.playbook = "provision.yaml"
+    ansible.playbook = "ansible/site.yml"
+    ansible.sudo = true
+    ansible.verbose = "vvvv"
+    #ansible.raw_ssh_args = ['-vvvv -o IdentitiesOnly=yes']
+  end
 end
